@@ -12,7 +12,7 @@ $tag = "v$version"
 if (git status --porcelain) { throw 'Commit your changes first (git status is not clean).' }
 if (git tag --list $tag) { throw "Tag $tag already exists. Bump AssemblyVersion in src\DevJunkCleaner.cs." }
 
-cmd /c "`"$PSScriptRootbuild.cmd`""
+& (Join-Path $PSScriptRoot 'build.cmd')
 if ($LASTEXITCODE) { throw 'Build failed.' }
 
 $zip = "dist\DevJunkCleaner-$version-win.zip"
