@@ -8,7 +8,7 @@ A small Windows app that frees disk space for developers. It finds folders that 
 
 **[Download the latest release](https://github.com/bhskr44/dev-junk-cleaner/releases/latest)**: one `DevJunkCleaner.exe`, nothing to install. It runs on Windows 10 and 11 with .NET Framework 4.8, which comes with Windows.
 
-> The exe is not code-signed yet, so Windows may show *Windows protected your PC*. Click **More info → Run anyway**. Checksums are attached to each release.
+> Code signing via SignPath Foundation is being set up (see [Code signing policy](#code-signing-policy)). Until then Windows may show *Windows protected your PC*. Click **More info → Run anyway**. Checksums are attached to each release.
 
 ## What it does
 
@@ -41,6 +41,23 @@ A small Windows app that frees disk space for developers. It finds folders that 
 
 Settings and the skip list are stored in `%LOCALAPPDATA%\DevJunkCleaner`.
 
+## Uninstall
+
+Nothing is installed. To remove the app completely, delete `DevJunkCleaner.exe` and the folder `%LOCALAPPDATA%\DevJunkCleaner`, which holds the settings and skip list.
+
+## Privacy
+
+This program will not transfer any information to other networked systems unless specifically requested. It has no telemetry, update checks or network access. It only reads and changes files on your own PC, and only after you confirm.
+
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+
+- Release binaries are built from this repository by [GitHub Actions](.github/workflows/release.yml) and signed only through that workflow. Nothing built on a personal machine is signed.
+- Committers and reviewers: [@bhskr44](https://github.com/bhskr44)
+- Approvers: [@bhskr44](https://github.com/bhskr44)
+- Every team member uses multi-factor authentication for GitHub and SignPath.
+
 ## Build from source
 
 ```
@@ -49,7 +66,7 @@ build.cmd
 
 This compiles `src\DevJunkCleaner.cs` into `dist\DevJunkCleaner.exe` with the C# compiler that ships with Windows, so no SDK or Visual Studio is needed. `tools\make-icon.ps1` regenerates the icon.
 
-To publish a release (needs the [GitHub CLI](https://cli.github.com/)): bump `AssemblyVersion` in `src\DevJunkCleaner.cs`, commit, push, then run
+To publish a release, bump the version attributes in `src\DevJunkCleaner.cs`, commit and push, then run the command below. It tags the commit, and GitHub Actions builds, signs and publishes the release.
 
 ```
 powershell -ExecutionPolicy Bypass -File release.ps1

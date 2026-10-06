@@ -1,0 +1,85 @@
+# Builds DevJunkCleaner.exe from source on every version tag (v1.2.3), signs it
+# through SignPath (free code signing for open source by SignPath Foundation)
+# and publishes the GitHub release.
+#
+# Signing turns on once the repository has:
+#   secret   SIGNPATH_API_TOKEN          API token of a SignPath submitter user
+#   variable SIGNPATH_ORGANIZATION_ID    from the SignPath organization page
+#   variable SIGNPATH_PROJECT_SLUG       optional, default dev-junk-cleaner
+#   variable SIGNPATH_POLICY_SLUG        optional, default release-signing
+# Until then releases are published unsigned.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      SIGNING: ${{ secrets.SIGNPATH_API_TOKEN != '' && vars.SIGNPATH_ORGANIZATION_ID != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        shell: cmd
+        run: .\build.cmd
+
+      - name: Check version matches tag
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $v = (Get-Item dist\DevJunkCleaner.exe).VersionInfo.FileVersion
+          $tag = '${{ github.ref_name }}'.TrimStart('v')
+          if (-not $v.StartsWith($tag)) { throw "Exe version $v does not match tag $tag - bump AssemblyVersion/AssemblyFileVersion." }
+
+      - name: Upload unsigned exe
+        id: unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned
+          path: dist/DevJunkCleaner.exe
+          if-no-files-found: error
+
+      - name: Sign with SignPath
+        if: env.SIGNING == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'dev-junk-cleaner' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          $exe = if ('${{ env.SIGNING }}' -eq 'true') { 'signed\DevJunkCleaner.exe' } else { 'dist\DevJunkCleaner.exe' }
+          Copy-Item $exe out\DevJunkCleaner.exe
+          $v = (Get-Item out\DevJunkCleaner.exe).VersionInfo.ProductVersion
+          Compress-Archive -Path out\DevJunkCleaner.exe, README.md, LICENSE -DestinationPath "out\DevJunkCleaner-$v-win.zip"
+          Get-ChildItem out -File | ForEach-Object { '{0}  {1}' -f (Get-FileHash $_.FullName).Hash.ToLower(), $_.Name } |
+            Set-Content out\SHA256SUMS.txt -Encoding ascii
+          $sig = (Get-AuthenticodeSignature out\DevJunkCleaner.exe).Status
+          "Signature: $sig"
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $signed = '${{ env.SIGNING }}' -eq 'true'
+          $notes = "Download **DevJunkCleaner.exe** and run it - no install needed (Windows 10/11, .NET Framework 4.8 is built in).`n`n"
+          if (-not $signed) { $notes += "This build is not code-signed yet, so Windows may show *Windows protected your PC*: click **More info > Run anyway**.`n`n" }
+          $notes += "Checksums are in SHA256SUMS.txt."
+          gh release create '${{ github.ref_name }}' (Get-ChildItem out -File).FullName --title "Dev Junk Cleaner ${{ github.ref_name }}" --notes $notes

@@ -33,8 +33,11 @@ using System.Windows.Forms;
 [assembly: System.Runtime.Versioning.TargetFramework(".NETFramework,Version=v4.8")]
 [assembly: System.Reflection.AssemblyTitle("Dev Junk Cleaner")]
 [assembly: System.Reflection.AssemblyProduct("Dev Junk Cleaner")]
-[assembly: System.Reflection.AssemblyVersion("1.2.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.2.0.0")]
+[assembly: System.Reflection.AssemblyDescription("Frees disk space by removing re-creatable developer folders and caches")]
+[assembly: System.Reflection.AssemblyCompany("Bhaskar Ranjan Bora")]
+[assembly: System.Reflection.AssemblyVersion("1.2.1.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.2.1.0")]
+[assembly: System.Reflection.AssemblyInformationalVersion("1.2.1")]
 [assembly: System.Reflection.AssemblyCopyright("MIT License - https://github.com/bhskr44/dev-junk-cleaner")]
 
 namespace DevJunkCleaner
